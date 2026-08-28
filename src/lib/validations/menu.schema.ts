@@ -25,6 +25,7 @@ export const menuItemSchema = z.object({
     .max(150)
     .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens only."),
   description: z.string().max(500).optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
   basePrice: z.coerce.number().min(0, "Price must be 0 or more."),
   isVeg: z.coerce.boolean().default(true),
   spiceLevel: z.enum(["NONE", "MILD", "MEDIUM", "HOT"]).default("NONE"),

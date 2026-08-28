@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Plus, Pencil } from "lucide-react";
 import { Modal } from "@/components/admin/modal";
 import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
@@ -19,6 +20,7 @@ export interface ItemRow {
   name: string;
   slug: string;
   description: string | null;
+  imageUrl: string | null;
   basePrice: number;
   isVeg: boolean;
   spiceLevel: "NONE" | "MILD" | "MEDIUM" | "HOT";
@@ -75,7 +77,14 @@ export function ItemsManager({
             {items.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-3 font-medium text-foreground">
-                  {item.name}
+                  <span className="flex items-center gap-2">
+                    <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[var(--radius)] bg-background">
+                      {item.imageUrl && (
+                        <Image src={item.imageUrl} alt="" fill sizes="36px" className="object-cover" />
+                      )}
+                    </span>
+                    {item.name}
+                  </span>
                   {item.isFeatured && (
                     <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs text-accent">
                       Special
@@ -134,6 +143,7 @@ export function ItemsManager({
                     name: editingItem.name,
                     slug: editingItem.slug,
                     description: editingItem.description ?? "",
+                    imageUrl: editingItem.imageUrl ?? "",
                     basePrice: editingItem.basePrice,
                     isVeg: editingItem.isVeg,
                     spiceLevel: editingItem.spiceLevel,

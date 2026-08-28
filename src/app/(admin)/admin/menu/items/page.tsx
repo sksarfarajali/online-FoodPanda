@@ -29,6 +29,7 @@ export default async function AdminMenuItemsPage() {
             name: item.name,
             slug: item.slug,
             description: item.description,
+            imageUrl: item.imageUrl,
             basePrice: toNumber(item.basePrice),
             isVeg: item.isVeg,
             spiceLevel: item.spiceLevel,

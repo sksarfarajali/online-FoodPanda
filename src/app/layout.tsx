@@ -12,6 +12,12 @@ const displayFont = Playfair_Display({
   subsets: ["latin"],
 });
 
+// Every page reads live, admin-editable data straight from Postgres (not via fetch()), which
+// Next's automatic static/dynamic detection can't see — without this, Vercel's edge can cache
+// a response from before an admin change (e.g. serving a stale /setup page after Super Admin
+// creation). Force every route to render fresh per-request instead.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {

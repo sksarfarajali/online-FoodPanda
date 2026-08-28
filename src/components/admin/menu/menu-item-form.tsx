@@ -11,6 +11,7 @@ import {
 import { saveMenuItem } from "@/lib/actions/menu.actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError, Textarea } from "@/components/ui/input";
+import { ImageUploader } from "@/components/admin/image-uploader";
 import { slugify } from "@/lib/utils";
 
 export function MenuItemForm({
@@ -28,6 +29,7 @@ export function MenuItemForm({
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<MenuItemFormInput, unknown, MenuItemInput>({
     resolver: zodResolver(menuItemSchema),
@@ -43,6 +45,8 @@ export function MenuItemForm({
       sortOrder: 0,
     },
   });
+
+  const imageUrl = watch("imageUrl");
 
   const onSubmit = (data: MenuItemInput) => {
     setFormError(null);
@@ -93,6 +97,10 @@ export function MenuItemForm({
       <div>
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" rows={2} {...register("description")} />
+      </div>
+      <div>
+        <Label>Photo</Label>
+        <ImageUploader entity="menu" value={imageUrl} onChange={(url) => setValue("imageUrl", url)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>

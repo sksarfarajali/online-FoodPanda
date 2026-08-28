@@ -75,7 +75,8 @@ export async function saveMenuItem(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  const { id, ...data } = parsed.data;
+  const { id, imageUrl, ...rest } = parsed.data;
+  const data = { ...rest, imageUrl: imageUrl || null };
 
   try {
     if (id) {
