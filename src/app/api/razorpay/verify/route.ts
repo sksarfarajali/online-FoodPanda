@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { prisma } from "@/lib/prisma";
+import { verifyPaymentInputSchema } from "@/lib/validations/order.schema";
+
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const parsed = verifyPaymentInputSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input." }, { status: 400 });
+  }
+  const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
+
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) {
+    return NextResponse.json({ error: "Payment verification unavailable." }, { status: 500 });
+  }
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.razorpayOrderId !== razorpay_order_id) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest("hex");
+
+  const isValid =
+    expectedSignature.length === razorpay_signature.length &&
+    crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(razorpay_signature));
+
+  if (!isValid) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: "PAYMENT_FAILED", paymentStatus: "FAILED" },
+    });
+    return NextResponse.json({ error: "Payment verification failed." }, { status: 400 });
+  }
+
+  // Idempotent: only transition if not already confirmed (webhook may have won the race).
+  if (order.paymentStatus !== "PAID") {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: "PAID",
+        status: "PLACED",
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+      },
+    });
+  }
+
+  return NextResponse.json({ success: true, orderNumber: order.orderNumber });
+}

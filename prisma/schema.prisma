@@ -1,0 +1,332 @@
+// Prisma schema for Swaad-e-Mehfil
+// Generator/datasource conventions follow Prisma 7 (see .agents/skills/prisma-*)
+// Field-level modeling (types, relations, enums, indexes) is standard Prisma DSL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- ENUMS ----------
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PLACED
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+  PAYMENT_FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum SpiceLevel {
+  NONE
+  MILD
+  MEDIUM
+  HOT
+}
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  RESOLVED
+}
+
+// ---------- CORE / AUTH ----------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  role         Role     @default(CUSTOMER)
+  phone        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reservations Reservation[]
+  orders       Order[]
+
+  @@index([role])
+}
+
+// Single fixed-id row, upserted from Admin -> Settings. Never hardcode restaurant facts in code.
+model RestaurantSettings {
+  id                 String   @id @default("singleton")
+  restaurantName     String   @default("Swaad-e-Mehfil")
+  tagline            String?
+  description        String?
+  logoUrl            String?
+  faviconUrl         String?
+  addressLine1       String?
+  addressLine2       String?
+  city               String?
+  state              String?
+  postalCode         String?
+  country            String   @default("India")
+  latitude           Decimal? @db.Decimal(9, 6)
+  longitude          Decimal? @db.Decimal(9, 6)
+  googleMapsEmbedUrl String?
+  phonePrimary       String?
+  phoneSecondary     String?
+  whatsappNumber     String?
+  email              String?
+  facebookUrl        String?
+  instagramUrl       String?
+  twitterUrl         String?
+  youtubeUrl         String?
+  openingHours       Json?
+  currency           String   @default("INR")
+  taxPercent         Decimal  @default(5.0) @db.Decimal(5, 2)
+  deliveryFee        Decimal  @default(0) @db.Decimal(10, 2)
+  freeDeliveryAbove  Decimal? @db.Decimal(10, 2)
+  minOrderAmount     Decimal? @db.Decimal(10, 2)
+  deliveryEnabled    Boolean  @default(true)
+  pickupEnabled      Boolean  @default(true)
+  reservationEnabled Boolean  @default(true)
+  maxPartySize       Int      @default(12)
+  metaTitle          String?
+  metaDescription    String?
+  updatedAt          DateTime @updatedAt
+  updatedById        String?
+}
+
+// ---------- MENU ----------
+
+model MenuCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items MenuItem[]
+
+  @@index([sortOrder])
+}
+
+model MenuItem {
+  id          String     @id @default(cuid())
+  categoryId  String
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  basePrice   Decimal    @db.Decimal(10, 2)
+  isVeg       Boolean    @default(true)
+  spiceLevel  SpiceLevel @default(NONE)
+  isAvailable Boolean    @default(true)
+  isFeatured  Boolean    @default(false)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  variants   MenuItemVariant[]
+  addons     MenuItemAddon[]
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([isAvailable])
+}
+
+model MenuItemVariant {
+  id         String   @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String
+  priceDelta Decimal  @default(0) @db.Decimal(10, 2)
+  isDefault  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+
+  @@index([menuItemId])
+}
+
+model MenuItemAddon {
+  id          String   @id @default(cuid())
+  menuItemId  String
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  @@index([menuItemId])
+}
+
+// ---------- OFFERS / REVIEWS / GALLERY ----------
+
+model Offer {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  imageUrl        String?
+  code            String?   @unique
+  discountPercent Decimal?  @db.Decimal(5, 2)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Starts empty. No fabricated rows. Admin adds/approves.
+model Review {
+  id         String   @id @default(cuid())
+  authorName String
+  rating     Int
+  comment    String?
+  isApproved Boolean  @default(false)
+  source     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isApproved])
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  altText   String?
+  caption   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([sortOrder])
+}
+
+// ---------- RESERVATIONS ----------
+
+model Reservation {
+  id               String            @id @default(cuid())
+  userId           String?
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name             String
+  email            String
+  phone            String
+  partySize        Int
+  reservationDate  DateTime          @db.Date
+  reservationTime  String
+  status           ReservationStatus @default(PENDING)
+  specialRequest   String?
+  adminNote        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([status])
+  @@index([reservationDate])
+}
+
+// ---------- ORDERS ----------
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  customerName  String
+  customerEmail String
+  customerPhone String
+
+  orderType            OrderType
+  deliveryAddressLine1 String?
+  deliveryAddressLine2 String?
+  deliveryCity         String?
+  deliveryPostalCode   String?
+  deliveryInstructions String?
+
+  subtotal       Decimal @db.Decimal(10, 2)
+  taxAmount      Decimal @db.Decimal(10, 2)
+  deliveryFee    Decimal @default(0) @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount    Decimal @db.Decimal(10, 2)
+
+  status        OrderStatus   @default(PENDING_PAYMENT)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String    @id @default(cuid())
+  orderId   String
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String?
+  menuItem  MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  itemNameSnapshot    String
+  variantNameSnapshot String?
+  unitPriceSnapshot   Decimal @db.Decimal(10, 2)
+  quantity            Int
+  addonsSnapshot      Json?
+  lineTotal           Decimal @db.Decimal(10, 2)
+
+  @@index([orderId])
+}
+
+// ---------- CONTACT ----------
+
+model ContactMessage {
+  id        String                @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    ContactMessageStatus  @default(NEW)
+  createdAt DateTime              @default(now())
+
+  @@index([status])
+}
