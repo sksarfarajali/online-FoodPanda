@@ -28,6 +28,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ url });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    // TEMPORARY diagnostic (admin-only route, safe to expose a boolean) — remove once
+    // the Blob-storage detection issue is confirmed fixed.
+    const diagnostic = `blobTokenPresent=${Boolean(process.env.BLOB_READ_WRITE_TOKEN)}`;
+    return NextResponse.json({ error: `${message} [${diagnostic}]` }, { status: 400 });
   }
 }
