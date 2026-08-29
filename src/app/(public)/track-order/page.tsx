@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import { OrderTrackingMap } from "@/components/order/order-tracking-map";
+import { OrderStatusTimeline } from "@/components/order/order-status-timeline";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_PAYMENT: "Awaiting payment",
@@ -65,37 +66,43 @@ export default function TrackOrderPage() {
       {searched && !isPending && (
         <div className="mt-8">
           {result?.found ? (
-            <div className="rounded-lg border border-border bg-surface p-5">
-              <p className="text-sm text-muted">Order {result.orderNumber}</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">
-                {STATUS_LABELS[result.status] ?? result.status}
-              </p>
-              <dl className="mt-3 space-y-1 text-sm text-muted">
-                <div className="flex justify-between">
-                  <dt>Type</dt>
-                  <dd>{result.orderType === "DELIVERY" ? "Delivery" : "Pickup"}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Total</dt>
-                  <dd>{formatCurrency(result.totalAmount)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Payment</dt>
-                  <dd>
-                    {result.paymentMethod === "COD"
-                      ? result.paymentStatus === "PAID"
-                        ? "Cash — collected"
-                        : "Cash — pay on " + (result.orderType === "DELIVERY" ? "delivery" : "pickup")
-                      : result.paymentStatus === "PAID"
-                        ? "Paid online"
-                        : "Payment pending"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Placed</dt>
-                  <dd>{new Date(result.createdAt).toLocaleString()}</dd>
-                </div>
-              </dl>
+            <div className="space-y-6">
+              <div className="rounded-lg border border-border bg-surface p-5">
+                <p className="text-sm text-muted">Order {result.orderNumber}</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">
+                  {STATUS_LABELS[result.status] ?? result.status}
+                </p>
+                <dl className="mt-3 space-y-1 text-sm text-muted">
+                  <div className="flex justify-between">
+                    <dt>Type</dt>
+                    <dd>{result.orderType === "DELIVERY" ? "Delivery" : "Pickup"}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>Total</dt>
+                    <dd>{formatCurrency(result.totalAmount)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>Payment</dt>
+                    <dd>
+                      {result.paymentMethod === "COD"
+                        ? result.paymentStatus === "PAID"
+                          ? "Cash — collected"
+                          : "Cash — pay on " + (result.orderType === "DELIVERY" ? "delivery" : "pickup")
+                        : result.paymentStatus === "PAID"
+                          ? "Paid online"
+                          : "Payment pending"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>Placed</dt>
+                    <dd>{new Date(result.createdAt).toLocaleString()}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {!["PENDING_PAYMENT", "PAYMENT_FAILED", "CANCELLED"].includes(result.status) && (
+                <OrderStatusTimeline orderType={result.orderType} status={result.status} />
+              )}
 
               {result.orderType === "DELIVERY" && (
                 <OrderTrackingMap

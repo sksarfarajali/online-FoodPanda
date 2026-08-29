@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/services/settings.service";
 import { getVisibleRiderLocation } from "@/lib/services/rider.service";
 import { formatCurrency, toNumber } from "@/lib/utils";
 import { OrderTrackingMap } from "@/components/order/order-tracking-map";
+import { OrderStatusTimeline } from "@/components/order/order-status-timeline";
 
 export const metadata = { title: "Order Confirmation" };
 
@@ -80,6 +81,12 @@ export default async function OrderConfirmationPage({
           >
             Return to Cart
           </Link>
+        </div>
+      )}
+
+      {isConfirmed && (
+        <div className="mt-8">
+          <OrderStatusTimeline orderType={order.orderType} status={order.status} />
         </div>
       )}
 
