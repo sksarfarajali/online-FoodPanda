@@ -48,7 +48,7 @@ export function CheckoutForm({
   const [postalCode, setPostalCode] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
-  const [scriptReady, setScriptReady] = useState(false);
+  const [scriptStatus, setScriptStatus] = useState<"loading" | "ready" | "error">("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,8 +88,10 @@ export function CheckoutForm({
         return;
       }
 
-      if (!scriptReady || typeof window.Razorpay === "undefined") {
-        setError("Payment could not start. Please refresh and try again.");
+      if (scriptStatus !== "ready" || typeof window.Razorpay === "undefined") {
+        setError(
+          "Payment could not start — the payment gateway hasn't finished loading yet. Please wait a moment and try again."
+        );
         setIsSubmitting(false);
         return;
       }
@@ -140,7 +142,8 @@ export function CheckoutForm({
     <>
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={() => setScriptReady(true)}
+        onLoad={() => setScriptStatus("ready")}
+        onError={() => setScriptStatus("error")}
       />
       <form onSubmit={handleSubmit} className="space-y-6">
         {deliveryEnabled && pickupEnabled && (
@@ -246,9 +249,20 @@ export function CheckoutForm({
             {error}
           </p>
         )}
+        {scriptStatus === "error" && (
+          <p role="alert" className="text-sm text-danger">
+            Couldn&apos;t load the payment gateway. Check your connection (or an ad-blocker
+            blocking checkout.razorpay.com) and refresh the page.
+          </p>
+        )}
 
-        <Button type="submit" isLoading={isSubmitting} className="w-full">
-          Pay & Place Order
+        <Button
+          type="submit"
+          isLoading={isSubmitting || scriptStatus === "loading"}
+          disabled={scriptStatus !== "ready"}
+          className="w-full"
+        >
+          {scriptStatus === "loading" ? "Preparing secure payment…" : "Pay & Place Order"}
         </Button>
       </form>
     </>
