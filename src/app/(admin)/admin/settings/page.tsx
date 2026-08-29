@@ -52,6 +52,7 @@ export default async function AdminSettingsPage() {
             minOrderAmount: settings.minOrderAmount ? toNumber(settings.minOrderAmount) : undefined,
             deliveryEnabled: settings.deliveryEnabled,
             pickupEnabled: settings.pickupEnabled,
+            codEnabled: settings.codEnabled,
             reservationEnabled: settings.reservationEnabled,
             maxPartySize: settings.maxPartySize,
             metaTitle: settings.metaTitle ?? "",

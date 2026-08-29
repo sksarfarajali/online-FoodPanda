@@ -127,6 +127,11 @@ export async function createPendingOrder(params: {
   const { input, userId, pricedLines, totals } = params;
   const orderNumber = await generateUniqueOrderNumber();
 
+  // COD orders have no online payment step to wait for — the order is genuinely placed the
+  // moment it's created. ONLINE orders stay PENDING_PAYMENT until Razorpay actually confirms
+  // (via /api/razorpay/verify or the webhook) — never claim placed/paid before that happens.
+  const isCod = input.paymentMethod === "COD";
+
   return prisma.order.create({
     data: {
       orderNumber,
@@ -135,6 +140,7 @@ export async function createPendingOrder(params: {
       customerEmail: input.customerEmail,
       customerPhone: input.customerPhone,
       orderType: input.orderType,
+      paymentMethod: input.paymentMethod,
       deliveryAddressLine1: input.deliveryAddressLine1 || null,
       deliveryAddressLine2: input.deliveryAddressLine2 || null,
       deliveryCity: input.deliveryCity || null,
@@ -145,7 +151,7 @@ export async function createPendingOrder(params: {
       deliveryFee: totals.deliveryFee,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
-      status: "PENDING_PAYMENT",
+      status: isCod ? "PLACED" : "PENDING_PAYMENT",
       paymentStatus: "PENDING",
       items: {
         create: pricedLines.map((line) => ({
@@ -159,6 +165,19 @@ export async function createPendingOrder(params: {
         })),
       },
     },
+  });
+}
+
+/** Admin marks a COD order's cash as collected. Never applies to ONLINE orders — those are
+ *  only ever marked PAID by Razorpay verification/webhook, never manually. */
+export async function markCashCollected(orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.paymentMethod !== "COD") {
+    throw new Error("Only Cash on Delivery orders can be marked as cash collected.");
+  }
+  return prisma.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: "PAID" },
   });
 }
 

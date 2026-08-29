@@ -44,7 +44,11 @@ export default async function AccountOrdersPage() {
                 <p className="text-sm text-muted">{formatCurrency(order.totalAmount, settings.currency)}</p>
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted">
-                <span>{STATUS_LABELS[order.status] ?? order.status}</span>
+                <span>
+                  {STATUS_LABELS[order.status] ?? order.status}
+                  {" · "}
+                  {order.paymentMethod === "COD" ? "Cash" : "Online"}
+                </span>
                 <span>{order.createdAt.toLocaleDateString()}</span>
               </div>
             </Link>

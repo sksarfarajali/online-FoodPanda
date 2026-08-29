@@ -12,6 +12,7 @@ export const createOrderInputSchema = z
   .object({
     lines: z.array(cartLineInputSchema).min(1, "Your cart is empty."),
     orderType: z.enum(["DELIVERY", "PICKUP"]),
+    paymentMethod: z.enum(["ONLINE", "COD"]),
     customerName: z.string().min(1, "Name is required.").max(120),
     customerEmail: z.email("Enter a valid email address."),
     customerPhone: z.string().min(7, "Enter a valid phone number.").max(20),

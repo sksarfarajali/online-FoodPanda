@@ -35,6 +35,9 @@ export async function POST(request: Request) {
   if (input.orderType === "PICKUP" && !settings.pickupEnabled) {
     return NextResponse.json({ error: "Pickup is currently unavailable." }, { status: 400 });
   }
+  if (input.paymentMethod === "COD" && !settings.codEnabled) {
+    return NextResponse.json({ error: "Cash on delivery is currently unavailable." }, { status: 400 });
+  }
 
   let pricedLines;
   try {
@@ -63,6 +66,16 @@ export async function POST(request: Request) {
     pricedLines,
     totals,
   });
+
+  // COD needs no payment gateway — the order is placed immediately (see order.service.ts),
+  // cash is collected and marked paid by an admin later. Skip Razorpay entirely.
+  if (input.paymentMethod === "COD") {
+    return NextResponse.json({
+      codOrder: true,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+    });
+  }
 
   try {
     const razorpayOrder = await getRazorpayClient().orders.create({

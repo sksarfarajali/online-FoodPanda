@@ -213,6 +213,9 @@ export function SettingsForm({ initial }: { initial: SettingsInput }) {
             <input type="checkbox" {...register("pickupEnabled")} /> Pickup enabled
           </label>
           <label className="flex items-center gap-2 text-sm text-foreground">
+            <input type="checkbox" {...register("codEnabled")} /> Cash on delivery / pickup enabled
+          </label>
+          <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" {...register("reservationEnabled")} /> Reservations enabled
           </label>
         </div>

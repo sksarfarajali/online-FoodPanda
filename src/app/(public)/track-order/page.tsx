@@ -79,6 +79,18 @@ export default function TrackOrderPage() {
                   <dd>{formatCurrency(result.totalAmount)}</dd>
                 </div>
                 <div className="flex justify-between">
+                  <dt>Payment</dt>
+                  <dd>
+                    {result.paymentMethod === "COD"
+                      ? result.paymentStatus === "PAID"
+                        ? "Cash — collected"
+                        : "Cash — pay on " + (result.orderType === "DELIVERY" ? "delivery" : "pickup")
+                      : result.paymentStatus === "PAID"
+                        ? "Paid online"
+                        : "Payment pending"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
                   <dt>Placed</dt>
                   <dd>{new Date(result.createdAt).toLocaleString()}</dd>
                 </div>

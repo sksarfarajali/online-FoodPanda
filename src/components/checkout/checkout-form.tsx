@@ -24,11 +24,13 @@ export function CheckoutForm({
   currency,
   deliveryEnabled,
   pickupEnabled,
+  codEnabled,
   defaults,
 }: {
   currency: string;
   deliveryEnabled: boolean;
   pickupEnabled: boolean;
+  codEnabled: boolean;
   defaults: CheckoutDefaults;
 }) {
   const router = useRouter();
@@ -39,6 +41,7 @@ export function CheckoutForm({
   const [orderType, setOrderType] = useState<"DELIVERY" | "PICKUP">(
     deliveryEnabled ? "DELIVERY" : "PICKUP"
   );
+  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "COD">("ONLINE");
   const [name, setName] = useState(defaults.name ?? "");
   const [email, setEmail] = useState(defaults.email ?? "");
   const [phone, setPhone] = useState(defaults.phone ?? "");
@@ -51,6 +54,8 @@ export function CheckoutForm({
   const [scriptStatus, setScriptStatus] = useState<"loading" | "ready" | "error">("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const needsRazorpay = paymentMethod === "ONLINE";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +75,7 @@ export function CheckoutForm({
             specialInstructions: l.specialInstructions,
           })),
           orderType,
+          paymentMethod,
           customerName: name,
           customerEmail: email,
           customerPhone: phone,
@@ -85,6 +91,13 @@ export function CheckoutForm({
       if (!response.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
         setIsSubmitting(false);
+        return;
+      }
+
+      // Cash on Delivery/Pickup — no payment gateway involved, the order is placed immediately.
+      if (data.codOrder) {
+        clearCart();
+        router.push(`/order-confirmation/${data.orderNumber}`);
         return;
       }
 
@@ -138,6 +151,8 @@ export function CheckoutForm({
     return <p className="text-sm text-muted">Your cart is empty.</p>;
   }
 
+  const codLabel = orderType === "DELIVERY" ? "Cash on Delivery" : "Pay at Pickup";
+
   return (
     <>
       <Script
@@ -163,6 +178,34 @@ export function CheckoutForm({
                 {type === "DELIVERY" ? "Delivery" : "Pickup"}
               </button>
             ))}
+          </div>
+        )}
+
+        {codEnabled && (
+          <div>
+            <Label>Payment method</Label>
+            <div className="flex gap-2">
+              {(
+                [
+                  { value: "ONLINE" as const, label: "Pay Online" },
+                  { value: "COD" as const, label: codLabel },
+                ]
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPaymentMethod(option.value)}
+                  aria-pressed={paymentMethod === option.value}
+                  className={`h-10 flex-1 rounded-[var(--radius)] border text-sm font-medium ${
+                    paymentMethod === option.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-foreground"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -242,14 +285,18 @@ export function CheckoutForm({
           <span className="text-muted">Subtotal</span>
           <span className="font-semibold text-foreground">{formatCurrency(subtotal, currency)}</span>
         </div>
-        <p className="text-xs text-muted">Taxes and delivery fee are calculated on the next step.</p>
+        <p className="text-xs text-muted">
+          {paymentMethod === "COD"
+            ? "Taxes and delivery fee are calculated on the next step. Pay in cash when your order arrives."
+            : "Taxes and delivery fee are calculated on the next step."}
+        </p>
 
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
-        {scriptStatus === "error" && (
+        {needsRazorpay && scriptStatus === "error" && (
           <p role="alert" className="text-sm text-danger">
             Couldn&apos;t load the payment gateway. Check your connection (or an ad-blocker
             blocking checkout.razorpay.com) and refresh the page.
@@ -258,11 +305,15 @@ export function CheckoutForm({
 
         <Button
           type="submit"
-          isLoading={isSubmitting || scriptStatus === "loading"}
-          disabled={scriptStatus !== "ready"}
+          isLoading={isSubmitting || (needsRazorpay && scriptStatus === "loading")}
+          disabled={needsRazorpay && scriptStatus !== "ready"}
           className="w-full"
         >
-          {scriptStatus === "loading" ? "Preparing secure payment…" : "Pay & Place Order"}
+          {needsRazorpay
+            ? scriptStatus === "loading"
+              ? "Preparing secure payment…"
+              : "Pay & Place Order"
+            : `Place Order (${codLabel})`}
         </Button>
       </form>
     </>

@@ -19,7 +19,7 @@ export default async function CheckoutPage() {
     <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
       <h1 className="font-display text-3xl font-semibold text-foreground">Checkout</h1>
       <p className="mt-2 text-sm text-muted">
-        You can pay securely with cards, UPI, netbanking, and wallets via Razorpay.
+        Pay securely online via Razorpay{settings.codEnabled ? ", or choose cash on delivery/pickup." : "."}
       </p>
 
       <div className="mt-8">
@@ -27,6 +27,7 @@ export default async function CheckoutPage() {
           currency={settings.currency}
           deliveryEnabled={settings.deliveryEnabled}
           pickupEnabled={settings.pickupEnabled}
+          codEnabled={settings.codEnabled}
           defaults={{
             name: user?.name,
             email: user?.email,

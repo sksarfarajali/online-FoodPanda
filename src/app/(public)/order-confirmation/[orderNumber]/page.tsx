@@ -1,11 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Banknote } from "lucide-react";
 import { getOrderByNumber } from "@/lib/services/order.service";
 import { getSettings } from "@/lib/services/settings.service";
 import { formatCurrency, toNumber } from "@/lib/utils";
 
 export const metadata = { title: "Order Confirmation" };
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: "Awaiting payment",
+  PLACED: "Placed",
+  CONFIRMED: "Confirmed",
+  PREPARING: "Preparing",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  READY_FOR_PICKUP: "Ready for pickup",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  PAYMENT_FAILED: "Payment failed",
+};
 
 export default async function OrderConfirmationPage({
   params,
@@ -17,13 +29,17 @@ export default async function OrderConfirmationPage({
 
   if (!order) notFound();
 
-  // Payment success is rendered ONLY from the database's paymentStatus — never from a
-  // client-side callback alone (webhook + verify endpoint are the sources of truth).
-  const isPaid = order.paymentStatus === "PAID";
+  // Confirmation is rendered ONLY from the database's order status — never from a client-side
+  // callback alone (webhook + verify endpoint are the sources of truth for ONLINE payments).
+  // COD orders skip the payment gate entirely (see order.service.ts) and only ever land in
+  // PENDING_PAYMENT/PAYMENT_FAILED if something else went wrong, so this one check covers both
+  // payment methods correctly.
+  const isConfirmed = !["PENDING_PAYMENT", "PAYMENT_FAILED", "CANCELLED"].includes(order.status);
+  const isCod = order.paymentMethod === "COD";
 
   return (
     <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
-      {isPaid ? (
+      {isConfirmed ? (
         <div className="text-center">
           <CheckCircle2 className="mx-auto h-12 w-12 text-success" aria-hidden="true" />
           <h1 className="mt-4 font-display text-2xl font-semibold text-foreground">
@@ -33,16 +49,28 @@ export default async function OrderConfirmationPage({
             Thank you! Your order <span className="font-medium text-foreground">{order.orderNumber}</span>{" "}
             has been placed.
           </p>
+          <p className="mt-1 text-sm font-medium text-primary">
+            {STATUS_LABELS[order.status] ?? order.status}
+          </p>
+          {isCod && order.paymentStatus !== "PAID" && (
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-foreground">
+              <Banknote className="h-3.5 w-3.5" aria-hidden="true" />
+              Pay {formatCurrency(order.totalAmount, settings.currency)} in cash{" "}
+              {order.orderType === "DELIVERY" ? "on delivery" : "at pickup"}
+            </p>
+          )}
         </div>
       ) : (
         <div className="text-center">
           <XCircle className="mx-auto h-12 w-12 text-danger" aria-hidden="true" />
           <h1 className="mt-4 font-display text-2xl font-semibold text-foreground">
-            Payment Not Completed
+            {order.status === "CANCELLED" ? "Order Cancelled" : "Payment Not Completed"}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Order <span className="font-medium text-foreground">{order.orderNumber}</span> was not
-            paid. No charge was made. You can try again from your cart.
+            Order <span className="font-medium text-foreground">{order.orderNumber}</span>{" "}
+            {order.status === "CANCELLED"
+              ? "was cancelled."
+              : "was not paid. No charge was made. You can try again from your cart."}
           </p>
           <Link
             href="/cart"
@@ -87,10 +115,14 @@ export default async function OrderConfirmationPage({
             <span>Total</span>
             <span>{formatCurrency(order.totalAmount, settings.currency)}</span>
           </div>
+          <div className="flex justify-between text-muted">
+            <span>Payment method</span>
+            <span>{isCod ? "Cash" : "Paid online"}</span>
+          </div>
         </div>
       </div>
 
-      {isPaid && (
+      {isConfirmed && (
         <div className="mt-6 text-center">
           <Link href="/track-order" className="text-sm font-medium text-primary underline">
             Track this order

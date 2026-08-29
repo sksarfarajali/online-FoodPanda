@@ -43,6 +43,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PaymentMethod {
+  ONLINE
+  COD
+}
+
 enum ReservationStatus {
   PENDING
   CONFIRMED
@@ -116,6 +121,7 @@ model RestaurantSettings {
   minOrderAmount     Decimal? @db.Decimal(10, 2)
   deliveryEnabled    Boolean  @default(true)
   pickupEnabled      Boolean  @default(true)
+  codEnabled         Boolean  @default(true)
   reservationEnabled Boolean  @default(true)
   maxPartySize       Int      @default(12)
   metaTitle          String?
@@ -284,6 +290,7 @@ model Order {
 
   status        OrderStatus   @default(PENDING_PAYMENT)
   paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod @default(ONLINE)
 
   razorpayOrderId   String? @unique
   razorpayPaymentId String? @unique

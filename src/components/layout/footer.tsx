@@ -11,6 +11,7 @@ const QUICK_LINKS = [
   { href: "/reviews", label: "Reviews" },
   { href: "/reservations", label: "Reservations" },
   { href: "/contact", label: "Contact" },
+  { href: "/track-order", label: "Track Order" },
 ];
 
 const LEGAL_LINKS = [

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/services/settings.service";
 import { formatCurrency, toNumber } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
+import { MarkCashCollectedButton } from "@/components/admin/orders/mark-cash-collected-button";
 
 export const metadata = { title: "Order Detail" };
 
@@ -54,8 +55,12 @@ export default async function AdminOrderDetailPage({
 
           <h2 className="mt-4 text-sm font-semibold text-foreground">Payment</h2>
           <p className="mt-1 text-sm text-muted">
-            {order.paymentStatus} {order.razorpayPaymentId && `· ${order.razorpayPaymentId}`}
+            {order.paymentMethod === "COD" ? "Cash" : "Online"} · {order.paymentStatus}{" "}
+            {order.razorpayPaymentId && `· ${order.razorpayPaymentId}`}
           </p>
+          {order.paymentMethod === "COD" && order.paymentStatus !== "PAID" && (
+            <MarkCashCollectedButton orderId={order.id} />
+          )}
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-5">

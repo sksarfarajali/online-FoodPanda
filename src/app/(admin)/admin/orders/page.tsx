@@ -61,7 +61,7 @@ export default async function AdminOrdersPage() {
                           : "bg-muted/20 text-muted"
                     }`}
                   >
-                    {order.paymentStatus}
+                    {order.paymentMethod === "COD" ? "Cash" : "Online"} · {order.paymentStatus}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-foreground">{formatCurrency(order.totalAmount, settings.currency)}</td>

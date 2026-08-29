@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
 import { orderStatusSchema } from "@/lib/validations/order.schema";
+import { markCashCollected } from "@/lib/services/order.service";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult =
@@ -15,6 +16,7 @@ export type OrderLookupResult =
       orderNumber: string;
       status: string;
       paymentStatus: string;
+      paymentMethod: string;
       orderType: string;
       totalAmount: string;
       createdAt: string;
@@ -38,6 +40,7 @@ export async function lookupOrder(orderNumber: string, contact: string): Promise
     orderNumber: order.orderNumber,
     status: order.status,
     paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
     orderType: order.orderType,
     totalAmount: order.totalAmount.toString(),
     createdAt: order.createdAt.toISOString(),
@@ -56,6 +59,21 @@ export async function updateOrderStatus(input: unknown): Promise<ActionResult> {
     where: { id: parsed.data.id },
     data: { status: parsed.data.status },
   });
+
+  revalidatePath("/admin/orders");
+  return { success: true };
+}
+
+/** Admin confirms cash was physically collected for a COD order. */
+export async function markOrderCashCollected(orderId: string): Promise<ActionResult> {
+  await requireAdmin();
+
+  try {
+    await markCashCollected(orderId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not update order.";
+    return { success: false, error: message };
+  }
 
   revalidatePath("/admin/orders");
   return { success: true };

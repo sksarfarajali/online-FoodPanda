@@ -42,6 +42,7 @@ export const settingsSchema = z.object({
   minOrderAmount: z.coerce.number().min(0).optional(),
   deliveryEnabled: z.coerce.boolean().default(true),
   pickupEnabled: z.coerce.boolean().default(true),
+  codEnabled: z.coerce.boolean().default(true),
   reservationEnabled: z.coerce.boolean().default(true),
   maxPartySize: z.coerce.number().int().min(1).max(100).default(12),
 
