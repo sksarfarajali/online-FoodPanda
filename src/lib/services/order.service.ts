@@ -184,7 +184,18 @@ export async function markCashCollected(orderId: string) {
 export async function getOrderByNumber(orderNumber: string) {
   return prisma.order.findUnique({
     where: { orderNumber },
-    include: { items: true },
+    include: {
+      items: true,
+      rider: {
+        select: {
+          name: true,
+          phone: true,
+          currentLatitude: true,
+          currentLongitude: true,
+          locationUpdatedAt: true,
+        },
+      },
+    },
   });
 }
 

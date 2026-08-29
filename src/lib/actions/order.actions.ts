@@ -3,7 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
 import { orderStatusSchema } from "@/lib/validations/order.schema";
-import { markCashCollected } from "@/lib/services/order.service";
+import { markCashCollected, getOrderByNumber } from "@/lib/services/order.service";
+import { getVisibleRiderLocation } from "@/lib/services/rider.service";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult =
@@ -20,12 +21,20 @@ export type OrderLookupResult =
       orderType: string;
       totalAmount: string;
       createdAt: string;
+      rider: { name: string; latitude: number; longitude: number } | null;
     }
   | { found: false };
 
 /** Requires both order number and the phone/email on the order, to avoid enumeration. */
 export async function lookupOrder(orderNumber: string, contact: string): Promise<OrderLookupResult> {
-  const order = await prisma.order.findUnique({ where: { orderNumber: orderNumber.trim() } });
+  const order = await prisma.order.findUnique({
+    where: { orderNumber: orderNumber.trim() },
+    include: {
+      rider: {
+        select: { name: true, currentLatitude: true, currentLongitude: true, locationUpdatedAt: true },
+      },
+    },
+  });
   if (!order) return { found: false };
 
   const contactNormalized = contact.trim().toLowerCase();
@@ -44,7 +53,24 @@ export async function lookupOrder(orderNumber: string, contact: string): Promise
     orderType: order.orderType,
     totalAmount: order.totalAmount.toString(),
     createdAt: order.createdAt.toISOString(),
+    rider: getVisibleRiderLocation(order),
   };
+}
+
+export type OrderTrackingSnapshot = {
+  status: string;
+  rider: { name: string; latitude: number; longitude: number } | null;
+} | null;
+
+/**
+ * Lightweight polling endpoint for the order-confirmation page. No contact re-check —
+ * that page already trusts the order number alone (matches its existing lax gate; see
+ * getOrderByNumber usage there), so this reveals nothing the page doesn't already show.
+ */
+export async function getOrderTrackingSnapshot(orderNumber: string): Promise<OrderTrackingSnapshot> {
+  const order = await getOrderByNumber(orderNumber.trim());
+  if (!order) return null;
+  return { status: order.status, rider: getVisibleRiderLocation(order) };
 }
 
 export async function updateOrderStatus(input: unknown): Promise<ActionResult> {

@@ -17,6 +17,7 @@ enum Role {
   SUPER_ADMIN
   ADMIN
   CUSTOMER
+  DELIVERY_RIDER
 }
 
 enum OrderType {
@@ -82,10 +83,19 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  reservations Reservation[]
-  orders       Order[]
+  // --- Rider-only fields (unused/null for CUSTOMER/ADMIN/SUPER_ADMIN) ---
+  vehicleNumber     String?
+  isOnDuty          Boolean   @default(false)
+  currentLatitude   Decimal?  @db.Decimal(9, 6)
+  currentLongitude  Decimal?  @db.Decimal(9, 6)
+  locationUpdatedAt DateTime?
+
+  reservations   Reservation[]
+  orders         Order[]
+  assignedOrders Order[]       @relation("RiderOrders")
 
   @@index([role])
+  @@index([role, isOnDuty])
 }
 
 // Single fixed-id row, upserted from Admin -> Settings. Never hardcode restaurant facts in code.
@@ -271,6 +281,9 @@ model Order {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  riderId String?
+  rider   User?   @relation("RiderOrders", fields: [riderId], references: [id], onDelete: SetNull)
+
   customerName  String
   customerEmail String
   customerPhone String
@@ -304,6 +317,7 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([riderId])
 }
 
 model OrderItem {

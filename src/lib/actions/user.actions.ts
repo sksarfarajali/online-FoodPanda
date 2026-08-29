@@ -128,7 +128,11 @@ export async function loginAction(
     select: { role: true },
   });
   const defaultTarget =
-    existingUser?.role === "ADMIN" || existingUser?.role === "SUPER_ADMIN" ? "/admin" : "/";
+    existingUser?.role === "ADMIN" || existingUser?.role === "SUPER_ADMIN"
+      ? "/admin"
+      : existingUser?.role === "DELIVERY_RIDER"
+        ? "/rider"
+        : "/";
 
   try {
     await signIn("credentials", {

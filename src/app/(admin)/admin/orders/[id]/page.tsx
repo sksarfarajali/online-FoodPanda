@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/services/settings.service";
+import { getOnDutyRiders } from "@/lib/services/rider.service";
 import { formatCurrency, toNumber } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/orders/order-status-form";
 import { MarkCashCollectedButton } from "@/components/admin/orders/mark-cash-collected-button";
+import { AssignRiderForm } from "@/components/admin/orders/assign-rider-form";
 
 export const metadata = { title: "Order Detail" };
 
@@ -13,9 +15,10 @@ export default async function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [order, settings] = await Promise.all([
-    prisma.order.findUnique({ where: { id }, include: { items: true, user: true } }),
+  const [order, settings, riders] = await Promise.all([
+    prisma.order.findUnique({ where: { id }, include: { items: true, user: true, rider: true } }),
     getSettings(),
+    getOnDutyRiders(),
   ]);
 
   if (!order) notFound();
@@ -32,6 +35,16 @@ export default async function AdminOrderDetailPage({
       <div className="mt-6">
         <OrderStatusForm orderId={order.id} currentStatus={order.status} />
       </div>
+
+      {order.orderType === "DELIVERY" && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-foreground">Rider</h2>
+          <div className="mt-2">
+            <AssignRiderForm orderId={order.id} currentRiderId={order.riderId} riders={riders} />
+          </div>
+          {order.rider && <p className="mt-1 text-xs text-muted">{order.rider.phone}</p>}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-border bg-surface p-5">

@@ -23,9 +23,17 @@ export default auth((request) => {
     }
   }
 
+  if (pathname.startsWith("/rider")) {
+    if (role !== "DELIVERY_RIDER") {
+      const loginUrl = new URL("/login", request.nextUrl);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*", "/rider/:path*"],
 };

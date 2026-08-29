@@ -8,6 +8,7 @@ const NAV_ITEMS: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: "/admin/menu/categories", label: "Menu Categories" },
   { href: "/admin/menu/items", label: "Menu Items" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/riders", label: "Riders" },
   { href: "/admin/reservations", label: "Reservations" },
   { href: "/admin/offers", label: "Offers" },
   { href: "/admin/reviews", label: "Reviews" },

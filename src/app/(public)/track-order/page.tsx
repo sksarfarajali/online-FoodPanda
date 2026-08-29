@@ -5,6 +5,7 @@ import { lookupOrder, type OrderLookupResult } from "@/lib/actions/order.actions
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
+import { OrderTrackingMap } from "@/components/order/order-tracking-map";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_PAYMENT: "Awaiting payment",
@@ -95,6 +96,18 @@ export default function TrackOrderPage() {
                   <dd>{new Date(result.createdAt).toLocaleString()}</dd>
                 </div>
               </dl>
+
+              {result.orderType === "DELIVERY" && (
+                <OrderTrackingMap
+                  orderNumber={result.orderNumber}
+                  initialStatus={result.status}
+                  initialRider={result.rider}
+                  poll={async () => {
+                    const res = await lookupOrder(orderNumber, contact);
+                    return res.found ? { status: res.status, rider: res.rider } : null;
+                  }}
+                />
+              )}
             </div>
           ) : (
             <p className="text-sm text-danger">

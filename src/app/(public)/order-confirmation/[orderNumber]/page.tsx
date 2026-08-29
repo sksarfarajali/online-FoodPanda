@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { CheckCircle2, XCircle, Banknote } from "lucide-react";
 import { getOrderByNumber } from "@/lib/services/order.service";
 import { getSettings } from "@/lib/services/settings.service";
+import { getVisibleRiderLocation } from "@/lib/services/rider.service";
 import { formatCurrency, toNumber } from "@/lib/utils";
+import { OrderTrackingMap } from "@/components/order/order-tracking-map";
 
 export const metadata = { title: "Order Confirmation" };
 
@@ -121,6 +123,14 @@ export default async function OrderConfirmationPage({
           </div>
         </div>
       </div>
+
+      {isConfirmed && order.orderType === "DELIVERY" && (
+        <OrderTrackingMap
+          orderNumber={order.orderNumber}
+          initialStatus={order.status}
+          initialRider={getVisibleRiderLocation(order)}
+        />
+      )}
 
       {isConfirmed && (
         <div className="mt-6 text-center">
