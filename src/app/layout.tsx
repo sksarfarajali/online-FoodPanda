@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/shared/service-worker-registration";
 import "./globals.css";
 
 const bodyFont = Inter({
@@ -27,6 +28,10 @@ export const metadata: Metadata = {
   description: "Multi-cuisine Indian restaurant.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#7a2e2e",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -35,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

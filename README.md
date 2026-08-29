@@ -191,7 +191,11 @@ you need to provision those separately. Steps:
 These need the restaurant owner's own accounts/credentials or genuine iterative tuning, so
 they're documented here rather than guessed at:
 
-- Full PWA offline support (the manifest is a stub; no service worker yet).
+- Full asset/page caching for offline browsing. The app is installable (real icons, manifest,
+  theme color) and shows a friendly offline page instead of a browser error when the network
+  drops — but it deliberately does **not** cache menu/price/availability data for offline use,
+  since that's live, admin-editable content and showing stale prices offline would be worse
+  than showing nothing.
 - Google Analytics 4 event tracking (`NEXT_PUBLIC_GA_ID` is wired but unused — add tracking
   calls once you have a GA4 property).
 - CI/CD pipeline, custom domain/HTTPS beyond Vercel's default `*.vercel.app` — depends on your
