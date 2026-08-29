@@ -28,9 +28,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ url });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed.";
-    // TEMPORARY diagnostic (admin-only route, safe to expose a boolean) — remove once
-    // the Blob-storage detection issue is confirmed fixed.
-    const diagnostic = `blobTokenPresent=${Boolean(process.env.BLOB_READ_WRITE_TOKEN)}`;
+    // TEMPORARY diagnostic (admin-only route, lists key NAMES only, never values) — remove
+    // once the Blob-storage detection issue is confirmed fixed.
+    const blobKeys = Object.keys(process.env).filter((k) => k.toUpperCase().includes("BLOB"));
+    const diagnostic = `blobTokenPresent=${Boolean(process.env.BLOB_READ_WRITE_TOKEN)} envKeysWithBlob=[${blobKeys.join(",")}] totalEnvKeys=${Object.keys(process.env).length} vercelEnv=${process.env.VERCEL_ENV}`;
     return NextResponse.json({ error: `${message} [${diagnostic}]` }, { status: 400 });
   }
 }
