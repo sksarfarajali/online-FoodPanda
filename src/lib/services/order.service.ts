@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateOrderNumber, toNumber } from "@/lib/utils";
 import type { CreateOrderInput } from "@/lib/validations/order.schema";
 import type { RestaurantSettingsModel } from "@/generated/prisma/models";
+import type { OrderStatus, PaymentStatus } from "@/generated/prisma/enums";
 
 export class OrderPricingError extends Error {}
 
@@ -131,6 +132,7 @@ export async function createPendingOrder(params: {
   // moment it's created. ONLINE orders stay PENDING_PAYMENT until Razorpay actually confirms
   // (via /api/razorpay/verify or the webhook) — never claim placed/paid before that happens.
   const isCod = input.paymentMethod === "COD";
+  const initialStatus: OrderStatus = isCod ? "PLACED" : "PENDING_PAYMENT";
 
   return prisma.order.create({
     data: {
@@ -151,7 +153,7 @@ export async function createPendingOrder(params: {
       deliveryFee: totals.deliveryFee,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
-      status: isCod ? "PLACED" : "PENDING_PAYMENT",
+      status: initialStatus,
       paymentStatus: "PENDING",
       items: {
         create: pricedLines.map((line) => ({
@@ -164,7 +166,34 @@ export async function createPendingOrder(params: {
           lineTotal: line.lineTotal,
         })),
       },
+      statusHistory: {
+        create: { status: initialStatus },
+      },
     },
+  });
+}
+
+/**
+ * The one place an order's status is ever changed — always pairs the update with a
+ * OrderStatusHistory row in the same transaction, so the timeline UI has an accurate
+ * per-step timestamp instead of just the single, overwritten `updatedAt`.
+ */
+export async function setOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  extra?: Partial<{
+    paymentStatus: PaymentStatus;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }>
+) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.update({
+      where: { id: orderId },
+      data: { status, ...extra },
+    });
+    await tx.orderStatusHistory.create({ data: { orderId, status } });
+    return order;
   });
 }
 
@@ -195,6 +224,7 @@ export async function getOrderByNumber(orderNumber: string) {
           locationUpdatedAt: true,
         },
       },
+      statusHistory: { orderBy: { createdAt: "asc" } },
     },
   });
 }

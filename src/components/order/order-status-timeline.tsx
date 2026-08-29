@@ -17,11 +17,32 @@ const STEPS_BY_TYPE: Record<"DELIVERY" | "PICKUP", { status: string; label: stri
   ],
 };
 
+export interface OrderStatusHistoryEntry {
+  status: string;
+  at: string | Date;
+}
+
 /** Renders only for an order's normal happy-path progression — callers should keep their
  *  existing cancelled/payment-failed handling separate rather than feeding those statuses in. */
-export function OrderStatusTimeline({ orderType, status }: { orderType: string; status: string }) {
+export function OrderStatusTimeline({
+  orderType,
+  status,
+  statusHistory,
+}: {
+  orderType: string;
+  status: string;
+  /** Per-step timestamps from OrderStatusHistory. Omitted steps just show no time. */
+  statusHistory?: OrderStatusHistoryEntry[];
+}) {
   const steps = STEPS_BY_TYPE[orderType === "PICKUP" ? "PICKUP" : "DELIVERY"];
   const currentIndex = steps.findIndex((step) => step.status === status);
+
+  // Earliest recorded timestamp per status — a status can only be reached once on the
+  // happy path, so the first occurrence is the one worth showing.
+  const reachedAt = new Map<string, Date>();
+  for (const entry of statusHistory ?? []) {
+    if (!reachedAt.has(entry.status)) reachedAt.set(entry.status, new Date(entry.at));
+  }
 
   return (
     <div className="rounded-lg border border-border bg-surface p-5">
@@ -31,6 +52,7 @@ export function OrderStatusTimeline({ orderType, status }: { orderType: string; 
           const isDone = currentIndex >= 0 && index <= currentIndex;
           const isCurrent = index === currentIndex;
           const isLast = index === steps.length - 1;
+          const timestamp = reachedAt.get(step.status);
 
           return (
             <li key={step.status} className="flex gap-3">
@@ -48,17 +70,24 @@ export function OrderStatusTimeline({ orderType, status }: { orderType: string; 
                   />
                 )}
               </div>
-              <span
-                className={`pb-4 text-sm ${
-                  isCurrent
-                    ? "font-semibold text-foreground"
-                    : isDone
-                      ? "text-foreground"
-                      : "text-muted"
-                }`}
-              >
-                {step.label}
-              </span>
+              <div className="pb-4">
+                <p
+                  className={`text-sm ${
+                    isCurrent
+                      ? "font-semibold text-foreground"
+                      : isDone
+                        ? "text-foreground"
+                        : "text-muted"
+                  }`}
+                >
+                  {step.label}
+                </p>
+                {timestamp && (
+                  <p className="mt-0.5 text-xs text-muted">
+                    {timestamp.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                )}
+              </div>
             </li>
           );
         })}

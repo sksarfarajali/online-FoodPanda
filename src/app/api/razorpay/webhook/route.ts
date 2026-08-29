@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { prisma } from "@/lib/prisma";
+import { setOrderStatus } from "@/lib/services/order.service";
 
 interface RazorpayWebhookPayload {
   event: string;
@@ -48,19 +49,12 @@ export async function POST(request: Request) {
   }
 
   if (payload.event === "payment.captured" && order.paymentStatus !== "PAID") {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: "PAID",
-        status: "PLACED",
-        razorpayPaymentId: razorpayPaymentId ?? order.razorpayPaymentId,
-      },
+    await setOrderStatus(order.id, "PLACED", {
+      paymentStatus: "PAID",
+      razorpayPaymentId: razorpayPaymentId ?? order.razorpayPaymentId ?? undefined,
     });
   } else if (payload.event === "payment.failed" && order.paymentStatus === "PENDING") {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: "FAILED", status: "PAYMENT_FAILED" },
-    });
+    await setOrderStatus(order.id, "PAYMENT_FAILED", { paymentStatus: "FAILED" });
   }
 
   return NextResponse.json({ received: true });

@@ -312,12 +312,25 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items OrderItem[]
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
 
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([riderId])
+}
+
+// One row per status the order has actually passed through, in order — powers the
+// timeline UI. Never backfilled/inferred; only ever written alongside a real status change.
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 model OrderItem {

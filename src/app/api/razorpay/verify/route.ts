@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { setOrderStatus } from "@/lib/services/order.service";
 import { verifyPaymentInputSchema } from "@/lib/validations/order.schema";
 
 export async function POST(request: Request) {
@@ -37,23 +38,16 @@ export async function POST(request: Request) {
     crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(razorpay_signature));
 
   if (!isValid) {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { status: "PAYMENT_FAILED", paymentStatus: "FAILED" },
-    });
+    await setOrderStatus(order.id, "PAYMENT_FAILED", { paymentStatus: "FAILED" });
     return NextResponse.json({ error: "Payment verification failed." }, { status: 400 });
   }
 
   // Idempotent: only transition if not already confirmed (webhook may have won the race).
   if (order.paymentStatus !== "PAID") {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: "PAID",
-        status: "PLACED",
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-      },
+    await setOrderStatus(order.id, "PLACED", {
+      paymentStatus: "PAID",
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
     });
   }
 

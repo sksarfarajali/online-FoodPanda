@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireRole } from "@/lib/auth-guards";
+import { setOrderStatus } from "@/lib/services/order.service";
 import {
   createRiderSchema,
   assignRiderSchema,
@@ -132,7 +133,7 @@ export async function updateOrderStatusAsRider(input: RiderOrderStatusInput): Pr
     return { success: false, error: "This order is not assigned to you." };
   }
 
-  await prisma.order.update({ where: { id }, data: { status } });
+  await setOrderStatus(id, status);
 
   revalidatePath("/rider");
   revalidatePath(`/rider/orders/${id}`);

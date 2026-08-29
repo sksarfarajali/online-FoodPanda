@@ -3,13 +3,15 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
 import { orderStatusSchema } from "@/lib/validations/order.schema";
-import { markCashCollected, getOrderByNumber } from "@/lib/services/order.service";
+import { markCashCollected, getOrderByNumber, setOrderStatus } from "@/lib/services/order.service";
 import { getVisibleRiderLocation } from "@/lib/services/rider.service";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult =
   | { success: true }
   | { success: false; error: string };
+
+export type StatusHistoryEntry = { status: string; at: string };
 
 export type OrderLookupResult =
   | {
@@ -22,6 +24,7 @@ export type OrderLookupResult =
       totalAmount: string;
       createdAt: string;
       rider: { name: string; latitude: number; longitude: number } | null;
+      statusHistory: StatusHistoryEntry[];
     }
   | { found: false };
 
@@ -33,6 +36,7 @@ export async function lookupOrder(orderNumber: string, contact: string): Promise
       rider: {
         select: { name: true, currentLatitude: true, currentLongitude: true, locationUpdatedAt: true },
       },
+      statusHistory: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!order) return { found: false };
@@ -54,6 +58,7 @@ export async function lookupOrder(orderNumber: string, contact: string): Promise
     totalAmount: order.totalAmount.toString(),
     createdAt: order.createdAt.toISOString(),
     rider: getVisibleRiderLocation(order),
+    statusHistory: order.statusHistory.map((h) => ({ status: h.status, at: h.createdAt.toISOString() })),
   };
 }
 
@@ -81,10 +86,7 @@ export async function updateOrderStatus(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  await prisma.order.update({
-    where: { id: parsed.data.id },
-    data: { status: parsed.data.status },
-  });
+  await setOrderStatus(parsed.data.id, parsed.data.status);
 
   revalidatePath("/admin/orders");
   return { success: true };

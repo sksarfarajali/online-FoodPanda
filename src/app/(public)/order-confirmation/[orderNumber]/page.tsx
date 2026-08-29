@@ -86,7 +86,11 @@ export default async function OrderConfirmationPage({
 
       {isConfirmed && (
         <div className="mt-8">
-          <OrderStatusTimeline orderType={order.orderType} status={order.status} />
+          <OrderStatusTimeline
+            orderType={order.orderType}
+            status={order.status}
+            statusHistory={order.statusHistory.map((h) => ({ status: h.status, at: h.createdAt }))}
+          />
         </div>
       )}
 
@@ -137,14 +141,6 @@ export default async function OrderConfirmationPage({
           initialStatus={order.status}
           initialRider={getVisibleRiderLocation(order)}
         />
-      )}
-
-      {isConfirmed && (
-        <div className="mt-6 text-center">
-          <Link href="/track-order" className="text-sm font-medium text-primary underline">
-            Track this order
-          </Link>
-        </div>
       )}
     </div>
   );
