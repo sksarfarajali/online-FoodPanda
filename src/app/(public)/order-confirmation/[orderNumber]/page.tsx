@@ -124,6 +124,12 @@ export default async function OrderConfirmationPage({
               <span>{formatCurrency(order.deliveryFee, settings.currency)}</span>
             </div>
           )}
+          {toNumber(order.discountAmount) > 0 && (
+            <div className="flex justify-between text-success">
+              <span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+              <span>−{formatCurrency(order.discountAmount, settings.currency)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-base font-semibold text-foreground">
             <span>Total</span>
             <span>{formatCurrency(order.totalAmount, settings.currency)}</span>

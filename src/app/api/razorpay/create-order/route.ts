@@ -7,6 +7,7 @@ import {
   createPendingOrder,
   OrderPricingError,
 } from "@/lib/services/order.service";
+import { validateOfferCode } from "@/lib/services/offer.service";
 import { createOrderInputSchema } from "@/lib/validations/order.schema";
 import { getRazorpayClient, toPaise } from "@/lib/razorpay";
 import { prisma } from "@/lib/prisma";
@@ -49,7 +50,17 @@ export async function POST(request: Request) {
     throw error;
   }
 
-  const totals = computeOrderTotals(pricedLines, input.orderType, settings);
+  // Never trust a client-computed discount — re-validate the code fresh against the DB.
+  let discountPercent = 0;
+  if (input.couponCode) {
+    const validation = await validateOfferCode(input.couponCode);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+    discountPercent = validation.discountPercent;
+  }
+
+  const totals = computeOrderTotals(pricedLines, input.orderType, settings, discountPercent);
 
   const minOrder = settings.minOrderAmount ? Number(settings.minOrderAmount) : null;
   if (minOrder !== null && totals.subtotal < minOrder) {

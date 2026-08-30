@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCartStore, cartSubtotal } from "@/stores/cart.store";
 import { formatCurrency } from "@/lib/utils";
+import { checkPromoCode } from "@/lib/actions/offer.actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 
@@ -55,7 +56,40 @@ export function CheckoutForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    title: string;
+    discountPercent: number;
+  } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [isApplyingPromo, startApplyingPromo] = useTransition();
+
   const needsRazorpay = paymentMethod === "ONLINE";
+  const discountPreview = appliedPromo ? (subtotal * appliedPromo.discountPercent) / 100 : 0;
+
+  function handleApplyPromo() {
+    setPromoError(null);
+    startApplyingPromo(async () => {
+      const result = await checkPromoCode(promoCode);
+      if (!result.valid) {
+        setAppliedPromo(null);
+        setPromoError(result.error);
+        return;
+      }
+      setAppliedPromo({
+        code: result.code,
+        title: result.title,
+        discountPercent: result.discountPercent,
+      });
+    });
+  }
+
+  function handleRemovePromo() {
+    setAppliedPromo(null);
+    setPromoCode("");
+    setPromoError(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,6 +118,7 @@ export function CheckoutForm({
           deliveryCity: orderType === "DELIVERY" ? city : undefined,
           deliveryPostalCode: orderType === "DELIVERY" ? postalCode : undefined,
           deliveryInstructions: orderType === "DELIVERY" ? deliveryInstructions : undefined,
+          couponCode: appliedPromo?.code,
         }),
       });
 
@@ -281,9 +316,56 @@ export function CheckoutForm({
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-border pt-4 text-sm">
-          <span className="text-muted">Subtotal</span>
-          <span className="font-semibold text-foreground">{formatCurrency(subtotal, currency)}</span>
+        <div className="border-t border-border pt-4">
+          <Label htmlFor="promoCode">Promo code</Label>
+          {appliedPromo ? (
+            <div className="flex items-center justify-between rounded-[var(--radius)] border border-success/40 bg-success/10 px-3.5 py-2.5 text-sm">
+              <span className="text-foreground">
+                <span className="font-semibold">{appliedPromo.code}</span> applied —{" "}
+                {appliedPromo.discountPercent}% off
+              </span>
+              <button
+                type="button"
+                onClick={handleRemovePromo}
+                className="text-xs font-medium text-primary underline"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                id="promoCode"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Enter code"
+                className="uppercase"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                isLoading={isApplyingPromo}
+                disabled={!promoCode.trim()}
+                onClick={handleApplyPromo}
+              >
+                Apply
+              </Button>
+            </div>
+          )}
+          {promoError && <p className="mt-1.5 text-sm text-danger">{promoError}</p>}
+        </div>
+
+        <div className="space-y-1 border-t border-border pt-4 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted">Subtotal</span>
+            <span className="font-semibold text-foreground">{formatCurrency(subtotal, currency)}</span>
+          </div>
+          {appliedPromo && (
+            <div className="flex items-center justify-between text-success">
+              <span>Discount ({appliedPromo.discountPercent}%)</span>
+              <span>−{formatCurrency(discountPreview, currency)}</span>
+            </div>
+          )}
         </div>
         <p className="text-xs text-muted">
           {paymentMethod === "COD"

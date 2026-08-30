@@ -67,6 +67,14 @@ export default async function OffersPage() {
                     )}
                   </div>
                   {offer.description && <p className="mt-2 text-sm text-muted">{offer.description}</p>}
+                  {offer.code && (
+                    <p className="mt-3 inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5 text-sm">
+                      <span className="text-muted">Use code</span>
+                      <span className="font-mono font-semibold tracking-wide text-primary">
+                        {offer.code}
+                      </span>
+                    </p>
+                  )}
                   {validity && <p className="mt-3 text-xs text-muted">{validity}</p>}
                 </div>
               </div>

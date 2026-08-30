@@ -93,10 +93,12 @@ export async function priceCartLines(lines: CreateOrderInput["lines"]) {
 export function computeOrderTotals(
   pricedLines: PricedLine[],
   orderType: "DELIVERY" | "PICKUP",
-  settings: RestaurantSettingsModel
+  settings: RestaurantSettingsModel,
+  discountPercent = 0
 ) {
   const subtotal = pricedLines.reduce((sum, l) => sum + l.lineTotal, 0);
   const taxAmount = Math.round(subtotal * (toNumber(settings.taxPercent) / 100) * 100) / 100;
+  const discountAmount = Math.round(subtotal * (discountPercent / 100) * 100) / 100;
 
   let deliveryFee = 0;
   if (orderType === "DELIVERY") {
@@ -105,9 +107,9 @@ export function computeOrderTotals(
     deliveryFee = freeAbove !== null && subtotal >= freeAbove ? 0 : fee;
   }
 
-  const totalAmount = Math.round((subtotal + taxAmount + deliveryFee) * 100) / 100;
+  const totalAmount = Math.round((subtotal + taxAmount + deliveryFee - discountAmount) * 100) / 100;
 
-  return { subtotal, taxAmount, deliveryFee, discountAmount: 0, totalAmount };
+  return { subtotal, taxAmount, deliveryFee, discountAmount, totalAmount };
 }
 
 async function generateUniqueOrderNumber() {
@@ -152,6 +154,7 @@ export async function createPendingOrder(params: {
       taxAmount: totals.taxAmount,
       deliveryFee: totals.deliveryFee,
       discountAmount: totals.discountAmount,
+      couponCode: totals.discountAmount > 0 ? (input.couponCode?.trim() ?? null) : null,
       totalAmount: totals.totalAmount,
       status: initialStatus,
       paymentStatus: "PENDING",

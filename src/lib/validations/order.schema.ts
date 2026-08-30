@@ -21,6 +21,7 @@ export const createOrderInputSchema = z
     deliveryCity: z.string().max(100).optional(),
     deliveryPostalCode: z.string().max(20).optional(),
     deliveryInstructions: z.string().max(300).optional(),
+    couponCode: z.string().max(30).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.orderType === "DELIVERY") {
