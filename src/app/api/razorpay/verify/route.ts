@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { setOrderStatus } from "@/lib/services/order.service";
 import { verifyPaymentInputSchema } from "@/lib/validations/order.schema";
+import { verifyRazorpaySignature } from "@/lib/razorpay";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -28,14 +28,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest("hex");
-
-  const isValid =
-    expectedSignature.length === razorpay_signature.length &&
-    crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(razorpay_signature));
+  const isValid = verifyRazorpaySignature(
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    secret
+  );
 
   if (!isValid) {
     await setOrderStatus(order.id, "PAYMENT_FAILED", { paymentStatus: "FAILED" });
