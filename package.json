@@ -20,6 +20,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@sentry/nextjs": "^10.72.0",
     "@types/leaflet": "^1.9.22",
     "@vercel/blob": "^2.8.0",
     "bcryptjs": "^3.0.3",
