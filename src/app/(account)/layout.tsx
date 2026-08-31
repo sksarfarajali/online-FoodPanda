@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { signOut } from "@/lib/auth";
+import { LogoutButton } from "@/components/cart/logout-button";
 
 const NAV_ITEMS = [
   { href: "/account", label: "Profile" },
@@ -40,12 +41,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
                 }}
                 className="mt-2"
               >
-                <button
-                  type="submit"
-                  className="w-full rounded-[var(--radius)] px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-surface"
-                >
-                  Log out
-                </button>
+                <LogoutButton />
               </form>
             </aside>
             <div>{children}</div>
