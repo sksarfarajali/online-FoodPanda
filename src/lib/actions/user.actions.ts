@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/lib/auth";
-import { requireSuperAdmin } from "@/lib/auth-guards";
+import { requireSuperAdmin, requireAdmin } from "@/lib/auth-guards";
 import {
   registerCustomerSchema,
   setupSuperAdminSchema,
@@ -194,6 +194,22 @@ export async function setAdminActive(
   }
   if (target.role === "SUPER_ADMIN" && !isActive) {
     return { success: false, error: "Cannot deactivate a Super Admin account." };
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { isActive } });
+  return { success: true };
+}
+
+/** Admin or Super Admin: deactivate/reactivate a customer account (blocks login while inactive). */
+export async function setCustomerActive(
+  userId: string,
+  isActive: boolean
+): Promise<ActionResult> {
+  await requireAdmin();
+
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target || target.role !== "CUSTOMER") {
+    return { success: false, error: "Customer account not found." };
   }
 
   await prisma.user.update({ where: { id: userId }, data: { isActive } });
