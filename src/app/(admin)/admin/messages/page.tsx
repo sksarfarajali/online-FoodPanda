@@ -9,6 +9,17 @@ export default async function AdminMessagesPage() {
     include: { user: { select: { id: true } } },
   });
 
+  // A guest submission (no userId) still shows up for the customer if their email matches
+  // an existing account — check which orphaned messages have one, so the badge is accurate.
+  const orphanEmails = [...new Set(messages.filter((m) => !m.userId).map((m) => m.email))];
+  const matchingAccounts = orphanEmails.length
+    ? await prisma.user.findMany({
+        where: { OR: orphanEmails.map((email) => ({ email: { equals: email, mode: "insensitive" as const } })) },
+        select: { email: true },
+      })
+    : [];
+  const matchedEmails = new Set(matchingAccounts.map((u) => u.email.toLowerCase()));
+
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-foreground">Messages</h1>
@@ -31,10 +42,18 @@ export default async function AdminMessagesPage() {
                       New
                     </span>
                   )}
-                  {!message.user && (
+                  {!message.user && matchedEmails.has(message.email.toLowerCase()) && (
+                    <span
+                      className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                      title="Sent while logged out, but this email matches an existing account — your reply will show once they sign in."
+                    >
+                      Guest — matches an account
+                    </span>
+                  )}
+                  {!message.user && !matchedEmails.has(message.email.toLowerCase()) && (
                     <span
                       className="ml-1 rounded-full bg-muted/20 px-2 py-0.5 text-xs text-muted"
-                      title="Submitted while logged out — a reply won't be visible anywhere in-app. You'll need to contact them directly."
+                      title="Submitted while logged out, and no account uses this email — a reply won't be visible anywhere in-app. You'll need to contact them directly."
                     >
                       Guest — no account to reply into
                     </span>
