@@ -4,7 +4,10 @@ import { MessageRow } from "@/components/admin/messages/message-row";
 export const metadata = { title: "Messages" };
 
 export default async function AdminMessagesPage() {
-  const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
+  const messages = await prisma.contactMessage.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { id: true } } },
+  });
 
   return (
     <div>
@@ -12,7 +15,13 @@ export default async function AdminMessagesPage() {
 
       <div className="mt-6 space-y-3">
         {messages.map((message) => (
-          <MessageRow key={message.id} id={message.id} status={message.status}>
+          <MessageRow
+            key={message.id}
+            id={message.id}
+            status={message.status}
+            adminReply={message.adminReply}
+            repliedAt={message.repliedAt}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-foreground">
@@ -20,6 +29,14 @@ export default async function AdminMessagesPage() {
                   {message.status === "NEW" && (
                     <span className="ml-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
                       New
+                    </span>
+                  )}
+                  {!message.user && (
+                    <span
+                      className="ml-1 rounded-full bg-muted/20 px-2 py-0.5 text-xs text-muted"
+                      title="Submitted while logged out — a reply won't be visible anywhere in-app. You'll need to contact them directly."
+                    >
+                      Guest — no account to reply into
                     </span>
                   )}
                 </p>

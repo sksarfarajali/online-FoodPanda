@@ -95,6 +95,8 @@ model User {
   assignedOrders Order[]        @relation("RiderOrders")
   galleryImages  GalleryImage[] @relation("UserGalleryUploads")
   review         Review?
+  contactMessages ContactMessage[] @relation("CustomerContactMessages")
+  contactReplies  ContactMessage[] @relation("ContactMessageReplies")
 
   @@index([role])
   @@index([role, isOnDuty])
@@ -375,5 +377,18 @@ model ContactMessage {
   status    ContactMessageStatus  @default(NEW)
   createdAt DateTime              @default(now())
 
+  // Set when the submitter was signed in — lets them see this message (and any reply) under
+  // their own account. Null for guest submissions, which have no account to show them in.
+  userId String?
+  user   User?   @relation("CustomerContactMessages", fields: [userId], references: [id], onDelete: SetNull)
+
+  // Set once an admin replies. Shown in the customer's account — no email/SMS is sent.
+  // No thread — one reply per message.
+  adminReply      String?
+  repliedAt       DateTime?
+  repliedByUserId String?
+  repliedBy       User?     @relation("ContactMessageReplies", fields: [repliedByUserId], references: [id], onDelete: SetNull)
+
   @@index([status])
+  @@index([userId])
 }

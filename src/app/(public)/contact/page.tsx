@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { getSettings } from "@/lib/services/settings.service";
+import { getCurrentUser } from "@/lib/auth-guards";
 import { ContactForm } from "@/components/contact/contact-form";
 import { MapEmbed } from "@/components/shared/map-embed";
 
@@ -8,7 +10,7 @@ export const metadata = { title: "Contact" };
 type OpeningHoursEntry = { day: string; opens: string; closes: string; closed?: boolean };
 
 export default async function ContactPage() {
-  const settings = await getSettings();
+  const [settings, user] = await Promise.all([getSettings(), getCurrentUser()]);
   const address = [settings.addressLine1, settings.addressLine2, settings.city, settings.state]
     .filter(Boolean)
     .join(", ");
@@ -20,6 +22,15 @@ export default async function ContactPage() {
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
       <h1 className="font-display text-3xl font-semibold text-foreground">Contact Us</h1>
       <p className="mt-2 text-sm text-muted">We&apos;d love to hear from you.</p>
+
+      {!user && (
+        <p className="mt-4 text-sm text-muted">
+          <Link href="/login?callbackUrl=/contact" className="text-primary hover:underline">
+            Sign in
+          </Link>{" "}
+          first so you can see our reply under My Messages once we respond.
+        </p>
+      )}
 
       <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-2">
         <ContactForm />
