@@ -16,6 +16,7 @@ export interface GalleryImageRow {
   caption: string | null;
   sortOrder: number;
   isActive: boolean;
+  uploadedBy?: { name: string; email: string } | null;
 }
 
 export function GalleryManager({ images }: { images: GalleryImageRow[] }) {
@@ -76,8 +77,18 @@ function GalleryImageCard({
     <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <div className="relative aspect-square w-full">
         <Image src={image.imageUrl} alt={image.altText ?? ""} fill className="object-cover" />
+        {image.uploadedBy && (
+          <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            Shared by customer
+          </span>
+        )}
       </div>
       <div className="p-3">
+        {image.uploadedBy && (
+          <p className="mb-2 truncate text-xs text-muted" title={image.uploadedBy.email}>
+            {image.uploadedBy.name}
+          </p>
+        )}
         <div className="flex items-center gap-2">
           <Input
             type="number"

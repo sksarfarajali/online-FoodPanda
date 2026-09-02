@@ -93,6 +93,7 @@ model User {
   reservations   Reservation[]
   orders         Order[]
   assignedOrders Order[]       @relation("RiderOrders")
+  galleryImages  GalleryImage[] @relation("UserGalleryUploads")
 
   @@index([role])
   @@index([role, isOnDuty])
@@ -247,7 +248,12 @@ model GalleryImage {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
+  // Set when a signed-in customer shared this photo themselves (null for admin-added photos).
+  uploadedByUserId String?
+  uploadedBy       User?   @relation("UserGalleryUploads", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
   @@index([sortOrder])
+  @@index([uploadedByUserId])
 }
 
 // ---------- RESERVATIONS ----------

@@ -4,7 +4,10 @@ import { GalleryManager } from "@/components/admin/gallery/gallery-manager";
 export const metadata = { title: "Gallery" };
 
 export default async function AdminGalleryPage() {
-  const images = await prisma.galleryImage.findMany({ orderBy: { sortOrder: "asc" } });
+  const images = await prisma.galleryImage.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: { uploadedBy: { select: { name: true, email: true } } },
+  });
 
   return (
     <div>
