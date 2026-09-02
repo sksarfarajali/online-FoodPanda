@@ -18,6 +18,7 @@ export interface ReviewRow {
   comment: string | null;
   source: string | null;
   isApproved: boolean;
+  user?: { email: string } | null;
 }
 
 export function ReviewsManager({ reviews }: { reviews: ReviewRow[] }) {
@@ -46,6 +47,14 @@ export function ReviewsManager({ reviews }: { reviews: ReviewRow[] }) {
                   <StarRating rating={review.rating} />
                   <span className="text-sm font-medium text-foreground">{review.authorName}</span>
                   {review.source && <span className="text-xs text-muted">via {review.source}</span>}
+                  {review.user && (
+                    <span
+                      className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                      title={review.user.email}
+                    >
+                      Customer submitted
+                    </span>
+                  )}
                 </div>
                 {review.comment && <p className="mt-1.5 text-sm text-muted">{review.comment}</p>}
               </div>

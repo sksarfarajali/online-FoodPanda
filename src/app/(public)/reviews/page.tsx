@@ -1,7 +1,10 @@
 import { getApprovedReviews, getAverageRating } from "@/lib/services/review.service";
 import { getSettings } from "@/lib/services/settings.service";
+import { getCurrentUser } from "@/lib/auth-guards";
+import { prisma } from "@/lib/prisma";
 import { ReviewCard } from "@/components/shared/review-card";
 import { StarRating } from "@/components/shared/star-rating";
+import { ReviewSubmitForm } from "@/components/review/review-submit-form";
 import { buildBaseMetadata } from "@/lib/seo";
 
 export async function generateMetadata() {
@@ -10,10 +13,17 @@ export async function generateMetadata() {
 }
 
 export default async function ReviewsPage() {
-  const [reviews, { average, count }] = await Promise.all([
+  const [reviews, { average, count }, user] = await Promise.all([
     getApprovedReviews(),
     getAverageRating(),
+    getCurrentUser(),
   ]);
+  const myReview = user
+    ? await prisma.review.findUnique({
+        where: { userId: user.id },
+        select: { rating: true, comment: true, isApproved: true },
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
@@ -44,6 +54,10 @@ export default async function ReviewsPage() {
           No reviews yet — be among the first to visit and share your experience.
         </p>
       )}
+
+      <div className="mt-12 max-w-xl">
+        <ReviewSubmitForm isLoggedIn={!!user} myReview={myReview} />
+      </div>
     </div>
   );
 }

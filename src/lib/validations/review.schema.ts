@@ -10,3 +10,9 @@ export const reviewSchema = z.object({
 });
 export type ReviewFormInput = z.input<typeof reviewSchema>;
 export type ReviewInput = z.output<typeof reviewSchema>;
+
+export const customerReviewSchema = z.object({
+  rating: z.coerce.number().int().min(1, "Pick a rating.").max(5),
+  comment: z.string().max(1000).optional().or(z.literal("")),
+});
+export type CustomerReviewInput = z.infer<typeof customerReviewSchema>;

@@ -92,8 +92,9 @@ model User {
 
   reservations   Reservation[]
   orders         Order[]
-  assignedOrders Order[]       @relation("RiderOrders")
+  assignedOrders Order[]        @relation("RiderOrders")
   galleryImages  GalleryImage[] @relation("UserGalleryUploads")
+  review         Review?
 
   @@index([role])
   @@index([role, isOnDuty])
@@ -235,6 +236,11 @@ model Review {
   source     String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  // Set when a signed-in customer submitted this themselves (null for admin-entered
+  // testimonials). Unique so each account has at most one review — resubmitting edits it.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([isApproved])
 }

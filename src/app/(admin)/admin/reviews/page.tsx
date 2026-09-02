@@ -4,7 +4,10 @@ import { ReviewsManager } from "@/components/admin/reviews/reviews-manager";
 export const metadata = { title: "Reviews" };
 
 export default async function AdminReviewsPage() {
-  const reviews = await prisma.review.findMany({ orderBy: { createdAt: "desc" } });
+  const reviews = await prisma.review.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { email: true } } },
+  });
 
   return (
     <div>
