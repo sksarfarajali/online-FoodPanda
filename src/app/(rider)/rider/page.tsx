@@ -5,6 +5,7 @@ import { getActiveOrdersForRider } from "@/lib/services/rider.service";
 import { getSettings } from "@/lib/services/settings.service";
 import { formatCurrency } from "@/lib/utils";
 import { OnDutyToggle } from "@/components/rider/on-duty-toggle";
+import { PushNotificationToggle } from "@/components/shared/push-notification-toggle";
 
 export const metadata = { title: "My Deliveries" };
 
@@ -27,7 +28,10 @@ export default async function RiderDashboardPage() {
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-semibold text-foreground">My Deliveries</h1>
 
-      <OnDutyToggle isOnDuty={riderRecord.isOnDuty} />
+      <div className="flex flex-wrap items-center gap-3">
+        <OnDutyToggle isOnDuty={riderRecord.isOnDuty} />
+        <PushNotificationToggle label="New delivery alerts" />
+      </div>
 
       {orders.length === 0 ? (
         <p className="text-sm text-muted">No deliveries assigned right now.</p>

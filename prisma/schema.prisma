@@ -95,11 +95,26 @@ model User {
   assignedOrders Order[]        @relation("RiderOrders")
   galleryImages  GalleryImage[] @relation("UserGalleryUploads")
   review         Review?
-  contactMessages ContactMessage[] @relation("CustomerContactMessages")
-  contactReplies  ContactMessage[] @relation("ContactMessageReplies")
+  contactMessages   ContactMessage[]  @relation("CustomerContactMessages")
+  contactReplies    ContactMessage[]  @relation("ContactMessageReplies")
+  pushSubscriptions PushSubscription[]
 
   @@index([role])
   @@index([role, isOnDuty])
+}
+
+// A browser's Web Push subscription for one user. A user can have several (one per
+// browser/device they enabled notifications on).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // Single fixed-id row, upserted from Admin -> Settings. Never hardcode restaurant facts in code.

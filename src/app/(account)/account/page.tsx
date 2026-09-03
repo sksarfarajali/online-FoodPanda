@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-guards";
+import { PushNotificationToggle } from "@/components/shared/push-notification-toggle";
 
 export const metadata = { title: "My Account" };
 
@@ -26,6 +27,16 @@ export default async function AccountProfilePage() {
         <div>
           <p className="text-xs text-muted">Phone</p>
           <p className="text-sm text-foreground">{user.phone ?? "Not provided"}</p>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-lg border border-border bg-surface p-5">
+        <p className="text-sm font-medium text-foreground">Notifications</p>
+        <p className="mt-1 text-xs text-muted">
+          Get notified when your order status changes, even if you don&apos;t have the app open.
+        </p>
+        <div className="mt-3">
+          <PushNotificationToggle label="Order updates" />
         </div>
       </div>
     </div>

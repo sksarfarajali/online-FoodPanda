@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth-guards";
 import { orderStatusSchema } from "@/lib/validations/order.schema";
 import { markCashCollected, getOrderByNumber, setOrderStatus } from "@/lib/services/order.service";
 import { getVisibleRiderLocation } from "@/lib/services/rider.service";
+import { notifyOrderStatusChange } from "@/lib/services/push.service";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult =
@@ -86,7 +87,8 @@ export async function updateOrderStatus(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  await setOrderStatus(parsed.data.id, parsed.data.status);
+  const order = await setOrderStatus(parsed.data.id, parsed.data.status);
+  await notifyOrderStatusChange(order);
 
   revalidatePath("/admin/orders");
   return { success: true };

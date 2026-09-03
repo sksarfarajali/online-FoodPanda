@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireRole } from "@/lib/auth-guards";
 import { setOrderStatus } from "@/lib/services/order.service";
+import { notifyOrderStatusChange, notifyRiderAssigned } from "@/lib/services/push.service";
 import {
   createRiderSchema,
   assignRiderSchema,
@@ -98,6 +99,7 @@ export async function assignRider(input: AssignRiderInput): Promise<ActionResult
   }
 
   await prisma.order.update({ where: { id: orderId }, data: { riderId } });
+  if (riderId) await notifyRiderAssigned(riderId, order.orderNumber);
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
@@ -133,7 +135,8 @@ export async function updateOrderStatusAsRider(input: RiderOrderStatusInput): Pr
     return { success: false, error: "This order is not assigned to you." };
   }
 
-  await setOrderStatus(id, status);
+  const updated = await setOrderStatus(id, status);
+  await notifyOrderStatusChange(updated);
 
   revalidatePath("/rider");
   revalidatePath(`/rider/orders/${id}`);
