@@ -7,6 +7,7 @@ import { RiderOrderStatusButtons } from "@/components/rider/rider-order-status-b
 import { LocationTracker } from "@/components/rider/location-tracker";
 import { MarkCashCollectedButton } from "@/components/rider/mark-cash-collected-button";
 import { DeliveryProofCapture } from "@/components/rider/delivery-proof-capture";
+import { NavigateButton } from "@/components/rider/navigate-button";
 
 export const metadata = { title: "Delivery Detail" };
 
@@ -59,6 +60,7 @@ export default async function RiderOrderDetailPage({
           <div>{address || "No address provided"}</div>
           {order.deliveryInstructions && <div className="italic">{order.deliveryInstructions}</div>}
         </dl>
+        {address && <NavigateButton address={address} />}
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-4">
