@@ -83,6 +83,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Account recovery — self-service "forgot password" via a chosen question, since the app
+  // sends no email/SMS. Answer is hashed the same way as the password, never stored plain.
+  securityQuestion   String?
+  securityAnswerHash String?
+
   // --- Rider-only fields (unused/null for CUSTOMER/ADMIN/SUPER_ADMIN) ---
   vehicleNumber     String?
   isOnDuty          Boolean   @default(false)

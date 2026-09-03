@@ -15,6 +15,7 @@ const NAV_ITEMS: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/gallery", label: "Gallery" },
   { href: "/admin/messages", label: "Messages" },
+  { href: "/admin/account", label: "My Account" },
   { href: "/admin/settings", label: "Settings", superAdminOnly: true },
   { href: "/admin/users", label: "Admin Users", superAdminOnly: true },
 ];

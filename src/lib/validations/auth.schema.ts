@@ -37,3 +37,38 @@ export const createAdminSchema = z.object({
   password: passwordField,
 });
 export type CreateAdminInput = z.infer<typeof createAdminSchema>;
+
+// No email/SMS in this app, so "forgot password" is self-service via a security question
+// instead of a mailed reset link. A fixed list (rather than a free-text question) keeps every
+// account's question reasonably hard to guess/social-engineer.
+export const SECURITY_QUESTIONS = [
+  "What was the name of your first pet?",
+  "What is your mother's maiden name?",
+  "What was the name of your first school?",
+  "What city were you born in?",
+  "What is your favorite book?",
+] as const;
+
+export const securityQuestionSchema = z.object({
+  securityQuestion: z.enum(SECURITY_QUESTIONS),
+  securityAnswer: z.string().min(2, "Answer is too short.").max(200),
+});
+export type SecurityQuestionInput = z.infer<typeof securityQuestionSchema>;
+
+export const forgotPasswordLookupSchema = z.object({
+  email: z.email("Enter a valid email address."),
+});
+export type ForgotPasswordLookupInput = z.infer<typeof forgotPasswordLookupSchema>;
+
+export const resetPasswordSchema = z.object({
+  email: z.email("Enter a valid email address."),
+  securityAnswer: z.string().min(1, "Answer is required."),
+  newPassword: passwordField,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required."),
+  newPassword: passwordField,
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

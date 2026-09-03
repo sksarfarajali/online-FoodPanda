@@ -44,6 +44,12 @@ export default async function RiderLayout({ children }: { children: React.ReactN
         >
           My Dashboard
         </Link>
+        <Link
+          href="/rider/account"
+          className="rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium text-foreground hover:bg-background"
+        >
+          Account
+        </Link>
       </nav>
       <main className="mx-auto max-w-2xl p-5">{children}</main>
     </div>

@@ -4,12 +4,15 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/lib/auth";
-import { requireSuperAdmin, requireAdmin } from "@/lib/auth-guards";
+import { requireSuperAdmin, requireAdmin, requireAuth } from "@/lib/auth-guards";
 import {
   registerCustomerSchema,
   setupSuperAdminSchema,
   createAdminSchema,
   loginSchema,
+  securityQuestionSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
   type RegisterCustomerInput,
   type SetupSuperAdminInput,
   type CreateAdminInput,
@@ -214,6 +217,87 @@ export async function setCustomerActive(
 
   await prisma.user.update({ where: { id: userId }, data: { isActive } });
   return { success: true };
+}
+
+/** Public: returns the account's security question, if it has one set up. Never distinguishes
+ *  "no such account" from "account has no security question" in its response — both just mean
+ *  the self-service reset path isn't available for that email. */
+export async function getSecurityQuestion(email: string): Promise<{ question: string | null }> {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase().trim() },
+    select: { securityQuestion: true, isActive: true },
+  });
+  if (!user || !user.isActive || !user.securityQuestion) return { question: null };
+  return { question: user.securityQuestion };
+}
+
+/** Public: resets a password once the security answer checks out. Re-verifies the answer here
+ *  server-side — never trust that the client only got this far because step 1 already matched. */
+export async function resetPasswordWithSecurityAnswer(input: unknown): Promise<ActionResult> {
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const { email, securityAnswer, newPassword } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+  if (!user || !user.isActive || !user.securityAnswerHash) {
+    return { success: false, error: "Couldn't verify your answer. Please contact us for help." };
+  }
+
+  const matches = await bcrypt.compare(normalizeAnswer(securityAnswer), user.securityAnswerHash);
+  if (!matches) {
+    return { success: false, error: "That answer doesn't match. Please try again." };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, HASH_ROUNDS);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  return { success: true };
+}
+
+/** Signed-in user: sets or replaces their own security question, used for self-service resets. */
+export async function setSecurityQuestion(input: unknown): Promise<ActionResult> {
+  const user = await requireAuth();
+
+  const parsed = securityQuestionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const securityAnswerHash = await bcrypt.hash(normalizeAnswer(parsed.data.securityAnswer), HASH_ROUNDS);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { securityQuestion: parsed.data.securityQuestion, securityAnswerHash },
+  });
+  return { success: true };
+}
+
+/** Signed-in user: changes their own password after verifying the current one. */
+export async function changePassword(input: unknown): Promise<ActionResult> {
+  const sessionUser = await requireAuth();
+
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  if (!user || !user.passwordHash) {
+    return { success: false, error: "Account not found." };
+  }
+
+  const matches = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!matches) {
+    return { success: false, error: "Current password is incorrect." };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.newPassword, HASH_ROUNDS);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  return { success: true };
+}
+
+function normalizeAnswer(answer: string): string {
+  return answer.trim().toLowerCase();
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
