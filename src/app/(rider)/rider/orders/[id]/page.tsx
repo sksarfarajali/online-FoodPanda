@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/services/settings.service";
 import { formatCurrency } from "@/lib/utils";
 import { RiderOrderStatusButtons } from "@/components/rider/rider-order-status-buttons";
 import { LocationTracker } from "@/components/rider/location-tracker";
+import { MarkCashCollectedButton } from "@/components/rider/mark-cash-collected-button";
 
 export const metadata = { title: "Delivery Detail" };
 
@@ -59,9 +60,16 @@ export default async function RiderOrderDetailPage({
         <h2 className="text-sm font-semibold text-foreground">Payment</h2>
         <p className="mt-1 text-sm text-muted">
           {order.paymentMethod === "COD"
-            ? `Collect ${formatCurrency(order.totalAmount, settings.currency)} in cash`
+            ? order.paymentStatus === "PAID"
+              ? `${formatCurrency(order.totalAmount, settings.currency)} cash collected`
+              : `Collect ${formatCurrency(order.totalAmount, settings.currency)} in cash`
             : "Paid online"}
         </p>
+        {order.paymentMethod === "COD" &&
+          order.paymentStatus !== "PAID" &&
+          (order.status === "OUT_FOR_DELIVERY" || order.status === "COMPLETED") && (
+            <MarkCashCollectedButton orderId={order.id} />
+          )}
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-4">

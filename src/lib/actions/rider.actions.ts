@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireRole } from "@/lib/auth-guards";
-import { setOrderStatus } from "@/lib/services/order.service";
+import { setOrderStatus, markCashCollected } from "@/lib/services/order.service";
 import { notifyOrderStatusChange, notifyRiderAssigned } from "@/lib/services/push.service";
 import {
   createRiderSchema,
@@ -140,6 +140,30 @@ export async function updateOrderStatusAsRider(input: RiderOrderStatusInput): Pr
 
   revalidatePath("/rider");
   revalidatePath(`/rider/orders/${id}`);
+  return { success: true };
+}
+
+/**
+ * Rider only: confirms cash was physically collected for a COD order assigned to them.
+ * Ownership check mirrors updateOrderStatusAsRider — a rider can only touch their own deliveries.
+ */
+export async function markCashCollectedAsRider(orderId: string): Promise<ActionResult> {
+  const user = await requireRole(["DELIVERY_RIDER"]);
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.riderId !== user.id) {
+    return { success: false, error: "This order is not assigned to you." };
+  }
+
+  try {
+    await markCashCollected(orderId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not update order.";
+    return { success: false, error: message };
+  }
+
+  revalidatePath("/rider");
+  revalidatePath(`/rider/orders/${orderId}`);
   return { success: true };
 }
 
