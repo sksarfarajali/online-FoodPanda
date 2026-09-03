@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { signOut } from "@/lib/auth";
 
@@ -30,6 +31,20 @@ export default async function RiderLayout({ children }: { children: React.ReactN
           </button>
         </form>
       </header>
+      <nav className="flex gap-1 border-b border-border bg-surface px-5 py-2">
+        <Link
+          href="/rider"
+          className="rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium text-foreground hover:bg-background"
+        >
+          Deliveries
+        </Link>
+        <Link
+          href="/rider/history"
+          className="rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium text-foreground hover:bg-background"
+        >
+          My Dashboard
+        </Link>
+      </nav>
       <main className="mx-auto max-w-2xl p-5">{children}</main>
     </div>
   );
