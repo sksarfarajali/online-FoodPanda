@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { RiderOrderStatusButtons } from "@/components/rider/rider-order-status-buttons";
 import { LocationTracker } from "@/components/rider/location-tracker";
 import { MarkCashCollectedButton } from "@/components/rider/mark-cash-collected-button";
+import { DeliveryProofCapture } from "@/components/rider/delivery-proof-capture";
 
 export const metadata = { title: "Delivery Detail" };
 
@@ -41,6 +42,10 @@ export default async function RiderOrderDetailPage({
       <RiderOrderStatusButtons orderId={order.id} status={order.status} />
 
       {order.status === "OUT_FOR_DELIVERY" && <LocationTracker />}
+
+      {(order.status === "OUT_FOR_DELIVERY" || order.status === "COMPLETED") && (
+        <DeliveryProofCapture orderId={order.id} existingUrl={order.deliveryProofUrl} />
+      )}
 
       <div className="rounded-lg border border-border bg-surface p-4">
         <h2 className="text-sm font-semibold text-foreground">Customer</h2>

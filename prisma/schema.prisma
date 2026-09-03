@@ -339,6 +339,10 @@ model Order {
   razorpayPaymentId String? @unique
   razorpaySignature String?
 
+  // Handover proof — a photo the rider takes at the customer's door when marking delivered.
+  deliveryProofUrl String?
+  deliveryProofAt  DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

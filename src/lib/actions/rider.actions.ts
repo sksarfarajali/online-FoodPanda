@@ -6,10 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireRole } from "@/lib/auth-guards";
 import { setOrderStatus, markCashCollected } from "@/lib/services/order.service";
 import { notifyOrderStatusChange, notifyRiderAssigned } from "@/lib/services/push.service";
+import { deleteUpload } from "@/lib/storage";
 import {
   createRiderSchema,
   assignRiderSchema,
   riderOrderStatusSchema,
+  deliveryProofSchema,
   type CreateRiderInput,
   type AssignRiderInput,
   type RiderOrderStatusInput,
@@ -164,6 +166,36 @@ export async function markCashCollectedAsRider(orderId: string): Promise<ActionR
 
   revalidatePath("/rider");
   revalidatePath(`/rider/orders/${orderId}`);
+  return { success: true };
+}
+
+/**
+ * Rider only: attaches a handover photo (taken at the customer's door) to an order assigned to
+ * them. Overwrites any previous photo for the same order — a rider only needs the latest.
+ */
+export async function uploadDeliveryProof(input: unknown): Promise<ActionResult> {
+  const user = await requireRole(["DELIVERY_RIDER"]);
+
+  const parsed = deliveryProofSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const { orderId, imageUrl } = parsed.data;
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.riderId !== user.id) {
+    return { success: false, error: "This order is not assigned to you." };
+  }
+
+  const previousUrl = order.deliveryProofUrl;
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { deliveryProofUrl: imageUrl, deliveryProofAt: new Date() },
+  });
+  if (previousUrl) await deleteUpload(previousUrl);
+
+  revalidatePath(`/rider/orders/${orderId}`);
+  revalidatePath(`/admin/orders/${orderId}`);
   return { success: true };
 }
 

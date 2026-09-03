@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/services/settings.service";
 import { getOnDutyRiders } from "@/lib/services/rider.service";
@@ -73,6 +74,18 @@ export default async function AdminOrderDetailPage({
           </p>
           {order.paymentMethod === "COD" && order.paymentStatus !== "PAID" && (
             <MarkCashCollectedButton orderId={order.id} />
+          )}
+
+          {order.deliveryProofUrl && (
+            <>
+              <h2 className="mt-4 text-sm font-semibold text-foreground">Handover Photo</h2>
+              <div className="relative mt-2 h-40 w-full overflow-hidden rounded-[var(--radius)] border border-border">
+                <Image src={order.deliveryProofUrl} alt="Delivery handover proof" fill className="object-cover" />
+              </div>
+              {order.deliveryProofAt && (
+                <p className="mt-1 text-xs text-muted">Taken {order.deliveryProofAt.toLocaleString()}</p>
+              )}
+            </>
           )}
         </div>
 

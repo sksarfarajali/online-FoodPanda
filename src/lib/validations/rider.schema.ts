@@ -28,3 +28,9 @@ export const riderOrderStatusSchema = z.object({
   status: z.enum(["OUT_FOR_DELIVERY", "COMPLETED"]),
 });
 export type RiderOrderStatusInput = z.infer<typeof riderOrderStatusSchema>;
+
+export const deliveryProofSchema = z.object({
+  orderId: z.string().min(1),
+  imageUrl: z.string().min(1, "Upload a photo first."),
+});
+export type DeliveryProofInput = z.infer<typeof deliveryProofSchema>;
